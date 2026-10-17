@@ -1,0 +1,421 @@
+/* SPDX-FileCopyrightText: 2026 Tony MageMEGA <https://magemega.com> */
+/* SPDX-License-Identifier: OSL-3.0 */
+
+/*
+ * The design shell reuses the fullscreen class on the wrapper and only changes
+ * its layout: toolbar on the first row, rail and content on the second.
+ */
+.tiptap-wrapper.maho-design-mode {
+    display: grid !important;
+    grid-template-columns: 260px minmax(0, 1fr) !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    /* The base wrapper caps itself at 70vh, which would leave the shell short */
+    max-height: none !important;
+    z-index: 9999 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: var(--tt-color-bg, #fff) !important;
+}
+
+/* The rail runs the full height on the left: the toolbar sits above the content,
+   not above the palette */
+.tiptap-wrapper.maho-design-mode .tiptap-toolbar {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+/* The shell is already full screen: the fullscreen toggle would only fight the
+   design mode state */
+.tiptap-wrapper.maho-design-mode .tiptap-toolbar button[data-command="toggleFullscreen"] {
+    display: none !important;
+}
+
+.tiptap-wrapper.maho-design-mode .tiptap-content {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 0;
+    overflow-x: hidden !important;
+    overflow-y: auto;
+}
+
+/* The drag handle and the node badges overhang the content by a few pixels,
+   which would otherwise add a horizontal scrollbar to the shell */
+.tiptap-wrapper.maho-design-mode .ProseMirror {
+    max-width: 100%;
+    overflow-x: hidden !important;
+}
+
+/* The rail only belongs to the design shell: outside it the wrapper is just
+   the regular editor and must keep its own layout */
+.maho-design-rail {
+    display: none;
+}
+
+.tiptap-wrapper.maho-design-mode .maho-design-rail {
+    grid-column: 1;
+    /* The rail spans the toolbar row too, so there is no empty band above it */
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 0;
+    padding: 0.75rem;
+    overflow-y: auto;
+    background: var(--tt-color-bg-subtle, #f7f7f8);
+    border-right: 1px solid var(--tt-color-border-light, #e5e7eb);
+}
+
+.maho-design-rail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.maho-design-rail-toggle {
+    border: 0;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--tt-color-text-muted, #666);
+    cursor: pointer;
+}
+
+.maho-design-rail-toggle:hover {
+    background: var(--tt-color-bg-hover, #e9e9ec);
+    color: var(--tt-color-text, #1f2937);
+}
+
+/* Collapsed palette: the strip with the toggle stays so it can be reopened */
+.tiptap-wrapper.maho-design-mode.maho-design-rail-collapsed {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+}
+
+.tiptap-wrapper.maho-design-mode.maho-design-rail-collapsed .maho-design-rail {
+    align-items: center;
+    padding: 0.5rem 0.25rem;
+}
+
+.tiptap-wrapper.maho-design-mode.maho-design-rail-collapsed .maho-design-rail-section,
+.tiptap-wrapper.maho-design-mode.maho-design-rail-collapsed .maho-design-rail-heading {
+    display: none;
+}
+
+.maho-design-rail-heading {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tt-color-text, #1f2937);
+}
+
+.maho-design-rail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.maho-design-rail-title {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tt-color-text-muted, #666);
+}
+
+.maho-design-rail-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.375rem;
+}
+
+.maho-design-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    box-sizing: border-box;
+    padding: 0.5rem 0.25rem;
+    border: 1px solid var(--tt-color-border-light, #e5e7eb);
+    border-radius: 0.375rem;
+    background: var(--tt-color-bg, #fff);
+    color: inherit;
+    /* Firefox starts a text selection instead of the drag without this */
+    user-select: none;
+    -moz-user-select: none;
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+}
+
+.maho-design-block,
+.maho-design-block .maho-design-block-label {
+    color: var(--tt-color-text, #1f2937);
+    opacity: 1;
+}
+
+.maho-design-block:hover,
+.maho-design-block:focus-visible {
+    border-color: var(--tt-color-primary, #0b6d9f);
+    outline: none;
+}
+
+.maho-design-block[draggable="true"] {
+    cursor: grab;
+}
+
+.maho-design-block[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.maho-design-block-icon {
+    display: inline-flex;
+}
+
+.maho-design-block-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.maho-design-block-label {
+    font-size: 11px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.maho-design-mode-toggle.is-active {
+    color: var(--tt-color-primary, #0b6d9f);
+}
+
+.maho-design-drop-line {
+    position: fixed;
+    display: none;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--tt-color-primary, #0b6d9f);
+    box-shadow: 0 0 0 2px rgba(11, 109, 159, 0.15);
+    pointer-events: none;
+    z-index: 10000;
+}
+
+/* The container that will receive the drop is outlined, so a nested cell can be
+   told apart from the page root */
+.tiptap-wrapper.maho-design-mode .maho-design-drop-target {
+    outline: 2px dashed var(--tt-color-primary, #0b6d9f);
+    outline-offset: -2px;
+}
+
+/* The core DragHandle has no nested mode enabled: the module brings its own
+   handle, which also covers nested blocks, so two handles never show up */
+.tiptap-drag-handle {
+    display: none !important;
+}
+
+/* Move handle for blocks, nested ones included: it can also take a block out
+   of its container */
+.maho-design-block-handle {
+    position: fixed;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 22px;
+    border: 1px solid var(--tt-color-border-light, #e5e7eb);
+    border-radius: 4px;
+    background: var(--tt-color-bg, #fff);
+    color: var(--tt-color-text-muted, #666);
+    cursor: grab;
+    z-index: 10001;
+}
+
+.maho-design-block-handle:hover {
+    color: var(--tt-color-text, #1f2937);
+}
+
+.maho-design-block-handle:active {
+    cursor: grabbing;
+}
+
+.maho-design-block-handle svg {
+    width: 14px;
+    height: 14px;
+}
+
+body.maho-design-dragging {
+    cursor: grabbing;
+}
+
+/* CTA dialog */
+.maho-design-cta-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.maho-design-field {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.maho-design-field > label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tt-color-text, #1f2937);
+}
+
+.maho-design-field input[type="text"],
+.maho-design-field select {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--tt-color-border, #cfcfd4);
+    border-radius: 0.25rem;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+}
+
+.maho-design-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.maho-design-row-checks {
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.maho-design-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 13px;
+}
+
+.maho-design-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--tt-color-text-muted, #666);
+}
+
+/*
+ * A CTA is a real button of the storefront theme, in design mode and outside
+ * it. The admin does not load daisyUI, so the base btn rules are reproduced
+ * here from the theme tokens; the dashed outline marks the anchor as an
+ * openable component without hiding its look.
+ */
+.ProseMirror a.btn {
+    --maho-cta-bg: #f6f6f5;
+    --maho-cta-fg: #1c2126;
+    --maho-cta-border: #f6f6f5;
+    --maho-cta-height: 2.5rem;
+    --maho-cta-padding: 1rem;
+    --maho-cta-font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    box-sizing: border-box;
+    height: var(--maho-cta-height);
+    padding-inline: var(--maho-cta-padding);
+    border: 1px solid var(--maho-cta-border);
+    border-radius: 0.5rem;
+    background-color: var(--maho-cta-bg);
+    color: var(--maho-cta-fg);
+    font-size: var(--maho-cta-font-size);
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    outline: 1px dashed rgba(11, 109, 159, 0.45);
+    outline-offset: 2px;
+}
+
+.ProseMirror a.btn:hover {
+    outline-style: solid;
+}
+
+.ProseMirror a.btn.btn-primary {
+    --maho-cta-bg: #0b6d9f;
+    --maho-cta-fg: #f4faff;
+    --maho-cta-border: #0b6d9f;
+}
+
+.ProseMirror a.btn.btn-secondary {
+    --maho-cta-bg: #12303f;
+    --maho-cta-fg: #eef6fb;
+    --maho-cta-border: #12303f;
+}
+
+.ProseMirror a.btn.btn-accent {
+    --maho-cta-bg: #0d8078;
+    --maho-cta-fg: #effdfa;
+    --maho-cta-border: #0d8078;
+}
+
+.ProseMirror a.btn.btn-neutral {
+    --maho-cta-bg: #23272c;
+    --maho-cta-fg: #f4f4f5;
+    --maho-cta-border: #23272c;
+}
+
+.ProseMirror a.btn.btn-outline {
+    --maho-cta-bg: transparent;
+    --maho-cta-fg: #0b6d9f;
+    --maho-cta-border: #0b6d9f;
+}
+
+.ProseMirror a.btn.btn-ghost {
+    --maho-cta-bg: transparent;
+    --maho-cta-fg: #0b6d9f;
+    --maho-cta-border: transparent;
+}
+
+.ProseMirror a.btn.btn-link {
+    --maho-cta-bg: transparent;
+    --maho-cta-fg: #0b6d9f;
+    --maho-cta-border: transparent;
+    height: auto;
+    padding-inline: 0;
+    text-decoration: underline;
+}
+
+.ProseMirror a.btn.btn-sm {
+    --maho-cta-height: 2rem;
+    --maho-cta-padding: 0.75rem;
+    --maho-cta-font-size: 0.75rem;
+}
+
+.ProseMirror a.btn.btn-lg {
+    --maho-cta-height: 3rem;
+    --maho-cta-padding: 1.25rem;
+    --maho-cta-font-size: 1.125rem;
+}
+
+.ProseMirror a.btn.btn-wide {
+    width: 100%;
+    max-width: 16rem;
+}
+
+.ProseMirror a.btn.btn-block {
+    width: 100%;
+}

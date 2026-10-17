@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+SPDX-FileCopyrightText: 2026 Tony MageMEGA <https://magemega.com>
+SPDX-License-Identifier: OSL-3.0
+-->
+<config>
+    <modules>
+        <MM_DesignMode>
+            <version>0.1.0</version>
+        </MM_DesignMode>
+    </modules>
+
+    <global>
+        <helpers>
+            <designmode>
+                <class>MM_DesignMode_Helper</class>
+            </designmode>
+        </helpers>
+    </global>
+
+    <adminhtml>
+        <layout>
+            <updates>
+                <mm_designmode>
+                    <file>design_mode.xml</file>
+                </mm_designmode>
+            </updates>
+        </layout>
+    </adminhtml>
+</config>

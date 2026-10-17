@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!--
+SPDX-FileCopyrightText: 2026 Tony MageMEGA <https://magemega.com>
+SPDX-License-Identifier: AFL-3.0
+-->
+<layout>
+    <!--
+        Added to the same handle that loads the editor, and behind the same flag,
+        so the script is only served on the pages that can open the editor.
+    -->
+    <editor>
+        <reference name="head">
+            <action method="addItem"><type>js</type><name>mage/adminhtml/wysiwyg/design-mode.js</name><params/><condition>can_load_wysiwyg</condition></action>
+            <action method="addItem"><type>js_css</type><name>mage/adminhtml/wysiwyg/design-mode.css</name><params/><condition>can_load_wysiwyg</condition></action>
+        </reference>
+    </editor>
+</layout>
