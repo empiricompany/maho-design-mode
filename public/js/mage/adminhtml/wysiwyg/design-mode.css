@@ -514,48 +514,10 @@ body.maho-design-dragging {
     font-size: 0.75rem;
 }
 
-.maho-design-preview-places {
-    max-height: 35%;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--tt-color-border-light, #e5e7eb);
-    overflow-y: auto;
-    font-size: 0.75rem;
-}
-
-.maho-design-preview-places-title {
-    margin: 0.5rem 0 0.25rem;
-    color: var(--tt-color-text-muted, #55555e);
-    font-weight: 600;
-}
-
-.maho-design-preview-place {
-    display: block;
-    width: 100%;
-    padding: 0.25rem 0.375rem;
-    border: 0;
-    border-radius: 0.25rem;
-    background: none;
-    color: inherit;
-    font-size: 0.75rem;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-    cursor: pointer;
-}
-
-.maho-design-preview-place:hover {
-    background: var(--tt-color-bg-hover, #e9e9ec);
-}
-
 .maho-design-preview-status {
     padding: 0.25rem 0.75rem;
     color: var(--tt-color-text-muted, #55555e);
     font-size: 0.75rem;
-}
-
-.maho-design-preview-status[data-state="standalone"] {
-    color: #8a5a00;
 }
 
 .maho-design-preview-status[data-state="error"] {
@@ -679,11 +641,6 @@ body.maho-design-dragging {
     font-weight: 600;
 }
 
-.maho-design-preview-places {
-    border-bottom: 1px solid var(--tt-color-border, #dcdce1);
-    background: var(--tt-color-bg-subtle, #f7f7f8);
-}
-
 /* The header is two rows of the same band: the URL row repeats the surface. */
 .maho-design-preview-url {
     background: var(--tt-color-bg-subtle, #f7f7f8);
@@ -730,3 +687,4 @@ body.maho-design-dragging {
     width: 1rem;
     height: 1rem;
 }
+

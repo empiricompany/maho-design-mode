@@ -26,10 +26,9 @@ class MM_DesignMode_Model_Observer
     public function markPreviewTarget(Maho\Event\Observer $observer): void
     {
         $event = $observer->getEvent();
-        $token = $this->helper()->readPreviewToken(
-            Mage::app()->getRequest()->getParam(MM_DesignMode_Helper_Data::PREVIEW_PARAM),
-        );
-        if ($token === null) {
+        $tokenValue = Mage::app()->getRequest()->getParam(MM_DesignMode_Helper_Data::PREVIEW_PARAM);
+        $token = $this->helper()->readPreviewToken($tokenValue);
+        if ($token === null || !is_string($tokenValue)) {
             return;
         }
 
@@ -47,11 +46,11 @@ class MM_DesignMode_Model_Observer
             return;
         }
 
-        // The preview posts the content being edited to the storefront URL: it is
-        // filtered like saved content, so the page is served complete and the
-        // theme initializes it as on the storefront — no client-side injection.
-        $draft = Mage::app()->getRequest()->getPost('mm_html');
-        if (is_string($draft) && $draft !== '') {
+        // The admin leaves the content being edited in the cache under the token:
+        // it is filtered like saved content, so the page is served complete and
+        // the theme initializes it as on the storefront — no client-side injection.
+        $draft = $this->helper()->loadDraft($tokenValue);
+        if ($draft !== null && $draft !== '') {
             /** @var Mage_Cms_Helper_Data $cmsHelper */
             $cmsHelper = Mage::helper('cms');
             $processor = $cmsHelper->getPageTemplateProcessor();

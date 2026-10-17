@@ -23,7 +23,6 @@
     const PREVIEW_RENDER_DELAY = 400;
     const PREVIEW_DEVICES = [['mobile', 390], ['tablet', 768], ['desktop', 1280]];
     const PREVIEW_WINDOW_NAME = 'maho-design-preview';
-    const PREVIEW_KEY_STORE = 'maho-design-preview-form-key';
     const prepared = new WeakSet();
     let previewSequence = 0;
 
@@ -375,13 +374,13 @@
      */
     const PREVIEW_ICONS = {
         reload: '<path d="M20 11a8 8 0 1 0 -2.34 5.66"/><path d="M20 4v7h-7"/>',
+        stop: '<path d="M6 6l12 12"/><path d="M18 6l-12 12"/>',
         go: '<path d="M5 12l13 0"/><path d="M12 6l6 6l-6 6"/>',
         popout: '<path d="M13 5h6v6"/><path d="M19 5l-8 8"/><path d="M18 14v4a2 2 0 0 1 -2 2h-9a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h4"/>',
         sync: '<path d="M4 11h13"/><path d="M14 8l3 3l-3 3"/><path d="M20 13h-13"/><path d="M10 16l-3 -3l3 -3"/>',
         desktop: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/>',
         tablet: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 17v.01"/>',
         mobile: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18v.01"/>',
-        placements: '<path d="M12 21s-6 -5.33 -6 -10a6 6 0 1 1 12 0c0 4.67 -6 10 -6 10z"/><path d="M12 14v-4"/><path d="M12 16v.01"/>',
     };
 
     const previewIcon = (name) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + (PREVIEW_ICONS[name] ?? '') + '</svg>';
@@ -389,19 +388,25 @@
     /**
      * The status line only speaks when there is something to say: a page that
      * rendered in place needs no confirmation, the preview itself is the answer.
+     * Loading is not one of those: the reload icon spins the way a browser does.
      */
     const previewStatus = (setup, state, key) => {
         const labels = {
-            loading: 'Loading the page…',
+            loading: '',
             placed: '',
-            standalone: 'Not on this page: showing the content only',
-            empty: 'Nothing to preview yet',
             error: 'The preview could not be rendered',
         };
         const label = labels[key] ?? key;
         state.status.textContent = label === '' ? '' : translate(setup, label);
         state.status.dataset.state = key;
         state.status.hidden = state.status.textContent === '';
+        if (state.reloadButton) {
+            const busy = key === 'loading';
+            state.reloadButton.innerHTML = previewIcon(busy ? 'stop' : 'reload');
+            state.reloadButton.title = translate(setup, busy ? 'Cancel loading' : 'Reload the page and initialize its components');
+            state.reloadButton.setAttribute('aria-label', translate(setup, busy ? 'Cancel loading' : 'Reload'));
+            state.reloadButton.setAttribute('aria-busy', busy ? 'true' : 'false');
+        }
     };
 
     const previewStoreUrl = (storeId) => {
@@ -436,81 +441,79 @@
     };
 
     /**
-     * The storefront refuses any POST without the form key of its own session,
-     * and that key is not the admin one: it is read from the framed page — same
-     * origin — every time a page is loaded, and kept for the next opens.
+     * The page in the preview cannot receive the content: the store home answers
+     * GET only and redirects a POST before the request reaches the block, and a
+     * GET cannot carry a page of HTML. The draft is therefore left in the cache
+     * under the preview token by the admin, and the storefront reads it while it
+     * renders: the page still arrives complete, with the theme's own init.
      */
-    const storedFormKey = () => {
-        try {
-            return window.sessionStorage.getItem(PREVIEW_KEY_STORE);
-        } catch (error) {
-            return null;
-        }
-    };
-
-    const rememberFormKey = (key) => {
-        try {
-            window.sessionStorage.setItem(PREVIEW_KEY_STORE, key);
-        } catch (error) {
-            // Storage can be disabled by the browser
-        }
-    };
-
-    const readFormKey = (frameWindow) => {
-        try {
-            const key = frameWindow?.FORM_KEY;
-            return typeof key === 'string' && key !== '' ? key : null;
-        } catch (error) {
-            // Another origin: there is no key to read
-            return null;
-        }
-    };
-
-    /**
-     * A hidden form posts the content to the page itself, inside the framed
-     * window: the page arrives complete and the theme initializes it with its own
-     * code. Injecting the markup afterwards would leave the components the theme
-     * built for the saved content half-dead, and re-implementing that init here
-     * would not be the page the visitor gets.
-     */
-    const createPreviewForm = (target) => {
-        const form = document.createElement('form');
-        form.method = 'post';
-        form.target = target;
-        form.hidden = true;
-        const field = document.createElement('textarea');
-        field.name = 'mm_html';
-        const keyField = document.createElement('input');
-        keyField.type = 'hidden';
-        keyField.name = 'form_key';
-        form.appendChild(field);
-        form.appendChild(keyField);
-        document.body.appendChild(form);
-        return { form, field, keyField };
-    };
-
-    const submitTo = (state, form, field, keyField, html, target) => {
-        keyField.value = state.formKey ?? '';
-        field.value = html;
-        form.action = previewUrl(state);
-        form.target = target;
-        form.submit();
-    };
-
-    const submitPreview = (setup, state) => {
-        if (!state.formKey) {
-            // Without the form key of the storefront session the page refuses the
-            // POST and redirects to its home, which would look like a broken page.
-            state.pending = null;
+    const postDraft = (setup, state, html, loaded) => {
+        const config = previewConfig();
+        if (!config?.draftUrl) {
+            state.inFlight = false;
             previewStatus(setup, state, 'error');
             return;
         }
+
+        const controller = new AbortController();
+        state.abort = controller;
+        fetch(config.draftUrl, {
+            method: 'POST',
+            body: previewPost({ token: config.token, html }),
+            credentials: 'same-origin',
+            signal: controller.signal,
+        })
+            .then((response) => {
+                if (state.abort !== controller) {
+                    return;
+                }
+                state.abort = null;
+                if (!response.ok) {
+                    throw new Error('draft rejected');
+                }
+                loaded();
+            })
+            .catch(() => {
+                if (controller.signal.aborted) {
+                    return;
+                }
+                state.abort = null;
+                state.inFlight = false;
+                previewStatus(setup, state, 'error');
+            });
+    };
+
+    const submitPreview = (setup, state) => {
         window.clearTimeout(state.timer);
-        previewStatus(setup, state, 'loading');
         state.lastSent = state.pending ?? state.lastSent ?? '';
         state.pending = null;
         state.inFlight = true;
-        submitTo(state, state.form, state.field, state.keyField, state.lastSent, state.frameName);
+        previewStatus(setup, state, 'loading');
+        postDraft(setup, state, state.lastSent, () => {
+            state.frame.src = previewUrl(state);
+        });
+    };
+
+    /**
+     * The reload control turns into a stop while a page is loading: the request
+     * for the draft is aborted and the frame stops where it is, leaving the
+     * previous page in place instead of a half-empty one.
+     */
+    const cancelPreview = (setup, state) => {
+        window.clearTimeout(state.timer);
+        state.timer = null;
+        state.pending = null;
+        if (state.abort) {
+            state.abort.abort();
+            state.abort = null;
+        }
+        try {
+            state.frame.contentWindow?.stop();
+        } catch (error) {
+            // A blank or cross-origin window has nothing to stop.
+        }
+        state.inFlight = false;
+        previewStatus(setup, state, 'placed');
     };
 
     /**
@@ -532,24 +535,13 @@
     };
 
     /**
-     * The page is loaded again (another URL or another store) together with the
-     * content. The very first time the form key is still unknown: a plain load
-     * reads it from the page, then the content is posted.
+     * A page load together with the content: the draft is stored first, then the
+     * frame is pointed at the page, which reads it while rendering.
      */
     const navigatePreview = (setup, state) => {
         state.pending = editorHtml(setup);
         state.lastSent = null;
-        if (state.formKey) {
-            submitPreview(setup, state);
-            return;
-        }
-        loadFrame(setup, state);
-    };
-
-    const loadFrame = (setup, state) => {
-        previewStatus(setup, state, 'loading');
-        state.inFlight = true;
-        state.frame.src = previewUrl(state);
+        submitPreview(setup, state);
     };
 
     const applyDevice = (state) => {
@@ -593,46 +585,6 @@
         return typeof setup.convertToPlain === 'function' ? setup.convertToPlain(html) : html;
     };
 
-    const findPlaces = (setup, state) => {
-        const config = previewConfig();
-        state.placesBox.hidden = false;
-        state.placesBox.textContent = translate(setup, 'Looking for placements…');
-        const body = previewPost({ block_id: config.entityId, store_id: state.storeId });
-        fetch(config.placesUrl, { method: 'POST', body, credentials: 'same-origin' })
-            .then((response) => response.json())
-            .then((data) => {
-                const groups = Array.isArray(data.groups) ? data.groups : [];
-                state.placesBox.textContent = '';
-                if (groups.length === 0) {
-                    state.placesBox.textContent = translate(
-                        setup,
-                        'No placement found: open the URL of a page of this store',
-                    );
-                    return;
-                }
-                for (const group of groups) {
-                    state.placesBox.appendChild(
-                        createElement('div', PREVIEW_CLASS + '-places-title', group.label),
-                    );
-                    for (const item of group.items) {
-                        const button = createElement('button', PREVIEW_CLASS + '-place', item.label);
-                        button.type = 'button';
-                        button.title = item.url;
-                        button.addEventListener('click', () => {
-                            state.url = item.url;
-                            state.urlInput.value = item.url;
-                            state.placesBox.hidden = true;
-                            navigatePreview(setup, state);
-                        });
-                        state.placesBox.appendChild(button);
-                    }
-                }
-            })
-            .catch(() => {
-                state.placesBox.textContent = translate(setup, 'The preview could not be rendered');
-            });
-    };
-
     /**
      * A frame without a document yet fires a load event for the empty page:
      * clearing the in-flight flag there would let a second POST start while the
@@ -648,48 +600,44 @@
     };
 
     /**
-     * A preview shows a page, it does not browse it: following a link would load
-     * another page without the preview token, and the content would be gone —
-     * which reads as the styling being lost.
+     * The preview browses like the storefront: a click follows the link inside the
+     * frame, so the address field follows the frame instead of staying on the
+     * first page. Reload then re-applies the draft to the page in view.
      */
-    const bindInertLinks = (frameWindow) => {
+    const syncPreviewUrl = (state, frameWindow) => {
+        let href;
         try {
-            const doc = frameWindow?.document;
-            if (!doc || doc.documentElement.dataset.mmInert === '1') {
-                return;
-            }
-            doc.documentElement.dataset.mmInert = '1';
-            doc.addEventListener('click', (event) => {
-                if (event.target?.closest?.('a[href], area[href]')) {
-                    event.preventDefault();
-                }
-            }, true);
-            doc.addEventListener('submit', (event) => event.preventDefault(), true);
+            href = frameWindow?.location?.href;
         } catch (error) {
-            // The window was navigated to another origin
+            return;
         }
+        if (typeof href !== 'string' || href === '' || href === 'about:blank') {
+            return;
+        }
+        try {
+            const url = new URL(href);
+            url.searchParams.delete('_mmts');
+            const config = previewConfig();
+            if (config?.previewParam) {
+                url.searchParams.delete(config.previewParam);
+            }
+            state.url = url.toString();
+        } catch (error) {
+            state.url = href;
+        }
+        state.urlInput.value = state.url;
     };
 
     const openPopout = (setup, state) => {
-        const popout = window.open('', state.popoutForm.target);
+        const popout = window.open('', state.windowName);
         if (!popout) {
-            previewStatus(setup, state, 'standalone');
+            previewStatus(setup, state, 'error');
             return;
         }
         state.popout = popout;
-        popout.addEventListener('load', () => bindInertLinks(popout));
-        if (!state.formKey) {
+        postDraft(setup, state, editorHtml(setup), () => {
             popout.location.href = previewUrl(state);
-            return;
-        }
-        submitTo(
-            state,
-            state.popoutForm,
-            state.popoutField,
-            state.popoutKeyField,
-            editorHtml(setup),
-            state.popoutForm.target,
-        );
+        });
     };
 
     const bindSplitter = (setup, state) => {
@@ -874,22 +822,30 @@
         const aside = createElement('aside', PREVIEW_CLASS);
         aside.setAttribute('aria-label', translate(setup, 'Preview'));
 
-        // The framed window and the popup are two separate targets, each fed by
-        // its own hidden form; the names are unique per editor instance.
+        // The framed window and the popup are two separate targets; the name is
+        // unique per editor instance.
         const windowName = PREVIEW_WINDOW_NAME + '-' + (++previewSequence);
         const frameName = windowName + '-frame';
-        const form = createPreviewForm(frameName);
-        const popoutForm = createPreviewForm(windowName);
 
         const bar = createElement('div', PREVIEW_CLASS + '-bar');
         const storeLabel = createElement('label', PREVIEW_CLASS + '-store', translate(setup, 'Store'));
         const storeSelect = document.createElement('select');
+        // Same shape as the system configuration select: one optgroup per
+        // website, so "English" on two websites is still two distinct entries.
+        const storeGroups = new Map();
         for (const store of config.stores ?? []) {
+            const groupKey = String(store.websiteId ?? store.website ?? '');
+            if (!storeGroups.has(groupKey)) {
+                const group = document.createElement('optgroup');
+                group.label = store.website || store.name;
+                storeGroups.set(groupKey, group);
+                storeSelect.appendChild(group);
+            }
             const option = document.createElement('option');
             option.value = String(store.id);
             option.textContent = store.name;
             option.selected = store.id === config.storeId;
-            storeSelect.appendChild(option);
+            storeGroups.get(groupKey).appendChild(option);
         }
         storeLabel.appendChild(storeSelect);
         bar.appendChild(storeLabel);
@@ -947,20 +903,7 @@
         goButton.setAttribute('aria-label', translate(setup, 'Open'));
         urlBar.appendChild(goButton);
 
-        if (config.entity === 'block') {
-            const placesButton = createElement('button', PREVIEW_CLASS + '-action');
-            placesButton.type = 'button';
-            placesButton.innerHTML = previewIcon('placements');
-            placesButton.title = translate(setup, 'Find placements');
-            placesButton.setAttribute('aria-label', translate(setup, 'Find placements'));
-            urlBar.appendChild(placesButton);
-            placesButton.addEventListener('click', () => findPlaces(setup, state.preview));
-        }
         aside.appendChild(urlBar);
-
-        const placesBox = createElement('div', PREVIEW_CLASS + '-places');
-        placesBox.hidden = true;
-        aside.appendChild(placesBox);
 
         const status = createElement('div', PREVIEW_CLASS + '-status');
         urlBar.appendChild(status);
@@ -991,17 +934,11 @@
             splitter,
             frame,
             frameName,
-            form: form.form,
-            field: form.field,
-            keyField: form.keyField,
-            popoutForm: popoutForm.form,
-            popoutField: popoutForm.field,
-            popoutKeyField: popoutForm.keyField,
-            formKey: storedFormKey(),
+            windowName,
             stage,
             status,
-            placesBox,
             urlInput,
+            reloadButton,
             deviceButtons,
             syncButton,
             syncEnabled,
@@ -1013,6 +950,7 @@
             pending: null,
             lastSent: null,
             inFlight: false,
+            abort: null,
             timer: null,
             onUpdate: null,
             popout: null,
@@ -1029,6 +967,9 @@
         });
         popoutButton.addEventListener('click', () => openPopout(setup, preview));
         goButton.addEventListener('click', () => {
+            if (preview.inFlight) {
+                return;
+            }
             preview.url = urlInput.value.trim() || config.defaultUrl || '';
             navigatePreview(setup, preview);
         });
@@ -1052,7 +993,13 @@
         paintSyncButton();
         // The preview is a page load already, so this is the "send it again"
         // action: it re-posts the current content to a fresh page.
-        reloadButton.addEventListener('click', () => navigatePreview(setup, preview));
+        reloadButton.addEventListener('click', () => {
+            if (preview.inFlight) {
+                cancelPreview(setup, preview);
+                return;
+            }
+            navigatePreview(setup, preview);
+        });
         syncButton.addEventListener('click', () => {
             preview.syncEnabled = !preview.syncEnabled;
             paintSyncButton();
@@ -1079,16 +1026,11 @@
             if (isBlankWindow(frameWindow)) {
                 return;
             }
-            const formKey = readFormKey(frameWindow);
-            if (formKey) {
-                preview.formKey = formKey;
-                rememberFormKey(formKey);
-            }
             preview.inFlight = false;
             previewStatus(setup, preview, 'placed');
             applyDevice(preview);
             bindScrollSync(setup, preview);
-            bindInertLinks(frameWindow);
+            syncPreviewUrl(preview, frameWindow);
             if (preview.pending !== null && preview.pending !== preview.lastSent) {
                 submitPreview(setup, preview);
             }
@@ -1115,8 +1057,6 @@
             return;
         }
         window.clearTimeout(preview.timer);
-        preview.form.remove();
-        preview.popoutForm.remove();
         preview.resizeObserver?.disconnect();
         preview.syncCleanup?.();
         preview.syncCleanup = null;

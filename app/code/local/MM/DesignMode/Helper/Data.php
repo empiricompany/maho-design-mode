@@ -24,12 +24,23 @@ class MM_DesignMode_Helper_Data extends Mage_Core_Helper_Abstract
     public const PREVIEW_PARAM = 'mm_preview';
 
     /**
+     * Prefix of the cache entry holding the draft being previewed.
+     */
+    public const DRAFT_PREFIX = 'mm_design_draft_';
+
+    /**
      * A tab can stay open for a long time; an expired token only degrades the
      * preview to the standalone content, so the lifetime can be generous.
      */
     private const TOKEN_LIFETIME = 14400;
 
     private const SIGNATURE_LENGTH = 32;
+
+    /**
+     * Long enough for a page load, short enough that a closed tab leaves no
+     * draft behind.
+     */
+    private const DRAFT_LIFETIME = 300;
 
     /**
      * Parsed once per request: the observer asks for the token on every block of
@@ -94,6 +105,34 @@ class MM_DesignMode_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         return ['entity' => $entity, 'id' => (int) $id];
+    }
+
+    /**
+     * The draft travels through the cache, not through the request: the admin
+     * posts it, then the previewed page reads it while it renders. A POST to the
+     * page itself is not an option, because the store home answers GET only and
+     * redirects a POST before the request reaches the block.
+     */
+    public function saveDraft(string $token, string $html): void
+    {
+        Mage::app()->getCache()->save($html, $this->draftKey($token), [], self::DRAFT_LIFETIME);
+    }
+
+    public function loadDraft(string $token): ?string
+    {
+        $draft = Mage::app()->getCache()->load($this->draftKey($token));
+
+        return is_string($draft) ? $draft : null;
+    }
+
+    public function clearDraft(string $token): void
+    {
+        Mage::app()->getCache()->remove($this->draftKey($token));
+    }
+
+    private function draftKey(string $token): string
+    {
+        return self::DRAFT_PREFIX . md5($token);
     }
 
     private function signature(string $payload): string

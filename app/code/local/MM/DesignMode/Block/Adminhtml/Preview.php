@@ -85,8 +85,7 @@ class MM_DesignMode_Block_Adminhtml_Preview extends Mage_Core_Block_Abstract
             'defaultUrl' => $this->getStoreBaseUrl($stores, $storeId) . $pagePath,
             'previewParam' => MM_DesignMode_Helper_Data::PREVIEW_PARAM,
             'token' => $helper->createPreviewToken($entity, $this->getEntityId()),
-            'renderUrl' => $this->adminUrl('designmode_preview', 'render'),
-            'placesUrl' => $this->adminUrl('designmode_preview', 'places'),
+            'draftUrl' => $this->adminUrl('designmode_preview', 'draft'),
         ];
     }
 
@@ -127,35 +126,30 @@ class MM_DesignMode_Block_Adminhtml_Preview extends Mage_Core_Block_Abstract
      * others never render it, and previewing them would show a page without the
      * content being edited. An assignment to every store view (0) keeps them all.
      *
-     * @return list<array{id: int, code: string, name: string, baseUrl: string}>
+     * @return list<array{id: int, code: string, name: string, websiteId: int, website: string, baseUrl: string}>
      */
     private function getStores(): array
     {
+        $active = $this->getActiveStores();
         $assigned = $this->getAssignedStoreIds();
-        $restricted = $assigned !== [] && !in_array(0, $assigned, true);
-
-        $stores = [];
-        foreach (Mage::app()->getStores() as $store) {
-            if (!$store instanceof Mage_Core_Model_Store || !$store->getIsActive()) {
-                continue;
-            }
-            if ($restricted && !in_array((int) $store->getId(), $assigned, true)) {
-                continue;
-            }
-            $stores[] = [
-                'id' => (int) $store->getId(),
-                'code' => (string) $store->getCode(),
-                'name' => (string) $store->getName(),
-                'baseUrl' => (string) $store->getBaseUrl(),
-            ];
+        if ($assigned === [] || in_array(0, $assigned, true)) {
+            return $active;
         }
 
+        $stores = array_values(array_filter(
+            $active,
+            static fn(array $store): bool => in_array($store['id'], $assigned, true),
+        ));
+
         // A page kept only on inactive store views would leave the select empty
-        return $stores === [] ? $this->getActiveStores() : $stores;
+        return $stores === [] ? $active : $stores;
     }
 
     /**
-     * @return list<array{id: int, code: string, name: string, baseUrl: string}>
+     * Store view names repeat across websites ("English" on every one of them),
+     * so the select groups them by website, like the system configuration one.
+     *
+     * @return list<array{id: int, code: string, name: string, websiteId: int, website: string, baseUrl: string}>
      */
     private function getActiveStores(): array
     {
@@ -164,10 +158,13 @@ class MM_DesignMode_Block_Adminhtml_Preview extends Mage_Core_Block_Abstract
             if (!$store instanceof Mage_Core_Model_Store || !$store->getIsActive()) {
                 continue;
             }
+            $website = $store->getWebsite();
             $stores[] = [
                 'id' => (int) $store->getId(),
                 'code' => (string) $store->getCode(),
                 'name' => (string) $store->getName(),
+                'websiteId' => (int) $store->getWebsiteId(),
+                'website' => $website instanceof Mage_Core_Model_Website ? (string) $website->getName() : '',
                 'baseUrl' => (string) $store->getBaseUrl(),
             ];
         }
@@ -276,7 +273,7 @@ class MM_DesignMode_Block_Adminhtml_Preview extends Mage_Core_Block_Abstract
     }
 
     /**
-     * @param list<array{id: int, code: string, name: string, baseUrl: string}> $stores
+     * @param list<array{id: int, code: string, name: string, websiteId: int, website: string, baseUrl: string}> $stores
      */
     private function getStoreBaseUrl(array $stores, int $storeId): string
     {
