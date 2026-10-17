@@ -395,11 +395,13 @@ class MM_DesignMode_Adminhtml_Designmode_PreviewController extends Mage_Adminhtm
      */
     private function respond(array $data, int $status = 200): void
     {
-        /** @var Mage_Core_Helper_Data $helper */
-        $helper = Mage::helper('core');
         $response = $this->getResponse();
         $response->setHttpResponseCode($status);
         $response->setHeader('Content-Type', 'application/json', true);
-        $response->setBody((string) $helper->jsonEncode($data));
+        // An error message built from a path or a file name is not always valid
+        // UTF-8; substituting the bad bytes keeps the answer JSON instead of
+        // turning the failure into a second, unrelated exception.
+        $body = json_encode($data, JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
+        $response->setBody($body);
     }
 }
