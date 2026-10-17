@@ -23,7 +23,6 @@ class MM_DesignMode_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public const PREVIEW_PARAM = 'mm_preview';
 
-
     /**
      * A tab can stay open for a long time; an expired token only degrades the
      * preview to the standalone content, so the lifetime can be generous.
@@ -31,6 +30,16 @@ class MM_DesignMode_Helper_Data extends Mage_Core_Helper_Abstract
     private const TOKEN_LIFETIME = 14400;
 
     private const SIGNATURE_LENGTH = 32;
+
+    /**
+     * Parsed once per request: the observer asks for the token on every block of
+     * the page, and the signature check is not free.
+     *
+     * @var array{entity: string, id: int}|null
+     */
+    private ?array $token = null;
+
+    private bool $tokenParsed = false;
 
     public function getPreviewSecret(): string
     {
@@ -50,6 +59,19 @@ class MM_DesignMode_Helper_Data extends Mage_Core_Helper_Abstract
      * @return array{entity: string, id: int}|null
      */
     public function readPreviewToken(mixed $token): ?array
+    {
+        if (!$this->tokenParsed) {
+            $this->tokenParsed = true;
+            $this->token = $this->parsePreviewToken($token);
+        }
+
+        return $this->token;
+    }
+
+    /**
+     * @return array{entity: string, id: int}|null
+     */
+    private function parsePreviewToken(mixed $token): ?array
     {
         if (!is_string($token) || $token === '') {
             return null;
