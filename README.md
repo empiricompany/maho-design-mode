@@ -29,8 +29,8 @@
 ## Installation
 
 ```bash
-./vendor/bin/harbor composer update empiricompany/maho-design-mode
-./vendor/bin/harbor maho cache:flush
+composer require empiricompany/maho-design-mode
+./maho cache:flush
 ```
 
 The module ships no install script and no schema migration: it is layout, JS and CSS only. Assets are published to `public/js/mage/adminhtml/wysiwyg/` by the Maho composer plugin; after editing files in `public/`, run `composer update` again from the project root to republish them.
