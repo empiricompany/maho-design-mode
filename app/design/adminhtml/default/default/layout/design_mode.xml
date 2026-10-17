@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
 SPDX-FileCopyrightText: 2026 Tony MageMEGA <https://magemega.com>
-SPDX-License-Identifier: AFL-3.0
+SPDX-License-Identifier: OSL-3.0
 -->
 <layout>
     <!--
@@ -12,6 +12,13 @@ SPDX-License-Identifier: AFL-3.0
         <reference name="head">
             <action method="addItem"><type>js</type><name>mage/adminhtml/wysiwyg/design-mode.js</name><params/><condition>can_load_wysiwyg</condition></action>
             <action method="addItem"><type>js_css</type><name>mage/adminhtml/wysiwyg/design-mode.css</name><params/><condition>can_load_wysiwyg</condition></action>
+        </reference>
+        <!--
+            The preview settings travel on a global instead of the editor config:
+            the block renders nothing outside the CMS page and block editors.
+        -->
+        <reference name="before_body_end">
+            <block type="designmode/adminhtml_preview" name="designmode.preview"/>
         </reference>
     </editor>
 </layout>

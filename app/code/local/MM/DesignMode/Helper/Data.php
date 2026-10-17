@@ -1,10 +1,81 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * SPDX-FileCopyrightText: 2026 Tony MageMEGA <https://magemega.com>
  * SPDX-License-Identifier: OSL-3.0
  */
 
-declare(strict_types=1);
+/**
+ * Shared helpers of the Design Mode module.
+ *
+ * The preview replaces a block on a page of the storefront, so that page has
+ * to know which block is being edited. The admin mints a signed token and the
+ * preview URL carries it: the marker can only be produced by a token signed
+ * with the installation key, and it expires, so it is not a way to read draft
+ * content from the outside.
+ */
+class MM_DesignMode_Helper_Data extends Mage_Core_Helper_Abstract
+{
+    /**
+     * Query parameter carrying the signed token on a storefront URL.
+     */
+    public const PREVIEW_PARAM = 'mm_preview';
 
-class MM_DesignMode_Helper_Data extends Mage_Core_Helper_Abstract {}
+
+    /**
+     * A tab can stay open for a long time; an expired token only degrades the
+     * preview to the standalone content, so the lifetime can be generous.
+     */
+    private const TOKEN_LIFETIME = 14400;
+
+    private const SIGNATURE_LENGTH = 32;
+
+    public function getPreviewSecret(): string
+    {
+        $config = Mage::getConfig();
+
+        return $config instanceof Mage_Core_Model_Config ? (string) $config->getNode('global/crypt/key') : '';
+    }
+
+    public function createPreviewToken(string $entity, int $entityId): string
+    {
+        $payload = $entity . ':' . $entityId . ':' . (time() + self::TOKEN_LIFETIME);
+
+        return $payload . ':' . $this->signature($payload);
+    }
+
+    /**
+     * @return array{entity: string, id: int}|null
+     */
+    public function readPreviewToken(mixed $token): ?array
+    {
+        if (!is_string($token) || $token === '') {
+            return null;
+        }
+
+        $parts = explode(':', $token);
+        if (count($parts) !== 4) {
+            return null;
+        }
+
+        [$entity, $id, $expires, $signature] = $parts;
+        if (!ctype_digit($id) || !ctype_digit($expires)) {
+            return null;
+        }
+        if (!hash_equals($this->signature($entity . ':' . $id . ':' . $expires), $signature)) {
+            return null;
+        }
+        if ((int) $expires < time()) {
+            return null;
+        }
+
+        return ['entity' => $entity, 'id' => (int) $id];
+    }
+
+    private function signature(string $payload): string
+    {
+        return substr(hash_hmac('sha256', $payload, $this->getPreviewSecret()), 0, self::SIGNATURE_LENGTH);
+    }
+}

@@ -11,6 +11,16 @@ SPDX-License-Identifier: OSL-3.0
     </modules>
 
     <global>
+        <models>
+            <designmode>
+                <class>MM_DesignMode_Model</class>
+            </designmode>
+        </models>
+        <blocks>
+            <designmode>
+                <class>MM_DesignMode_Block</class>
+            </designmode>
+        </blocks>
         <helpers>
             <designmode>
                 <class>MM_DesignMode_Helper</class>

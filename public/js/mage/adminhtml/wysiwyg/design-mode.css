@@ -419,3 +419,314 @@ body.maho-design-dragging {
 .ProseMirror a.btn.btn-block {
     width: 100%;
 }
+
+/* Split preview: the editor keeps the middle column, the storefront preview
+   takes the right one and the splitter between them sets its width */
+.tiptap-wrapper.maho-design-mode.maho-design-preview-open {
+    grid-template-columns: 260px minmax(0, 1fr) 6px var(--maho-preview-width, 45%) !important;
+}
+
+.tiptap-wrapper.maho-design-mode.maho-design-rail-collapsed.maho-design-preview-open {
+    grid-template-columns: 44px minmax(0, 1fr) 6px var(--maho-preview-width, 45%) !important;
+}
+
+.maho-design-splitter {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    cursor: col-resize;
+    touch-action: none;
+    background: var(--tt-color-border-light, #e5e7eb);
+}
+
+.maho-design-splitter:hover,
+.maho-design-splitter:focus-visible {
+    background: var(--tt-color-border, #d8d8dc);
+    outline: none;
+}
+
+.maho-design-preview {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-left: 1px solid var(--tt-color-border-light, #e5e7eb);
+    background: var(--tt-color-bg, #fff);
+}
+
+.maho-design-preview-bar,
+.maho-design-preview-url {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--tt-color-border-light, #e5e7eb);
+}
+
+.maho-design-preview-store {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--tt-color-text-muted, #55555e);
+}
+
+.maho-design-preview-store select {
+    max-width: 11rem;
+    font-size: 0.75rem;
+}
+
+.maho-design-preview-devices {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+
+.maho-design-preview-device,
+.maho-design-preview-action {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--tt-color-border, #d8d8dc);
+    border-radius: 0.375rem;
+    background: var(--tt-color-bg, #fff);
+    color: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.maho-design-preview-device:hover,
+.maho-design-preview-action:hover {
+    background: var(--tt-color-bg-hover, #e9e9ec);
+}
+
+.maho-design-preview-device.is-active {
+    border-color: var(--tt-color-primary, #1f5f8b);
+    background: var(--tt-color-bg-hover, #e9e9ec);
+    font-weight: 600;
+}
+
+.maho-design-preview-url input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--tt-color-border, #d8d8dc);
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+}
+
+.maho-design-preview-places {
+    max-height: 35%;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--tt-color-border-light, #e5e7eb);
+    overflow-y: auto;
+    font-size: 0.75rem;
+}
+
+.maho-design-preview-places-title {
+    margin: 0.5rem 0 0.25rem;
+    color: var(--tt-color-text-muted, #55555e);
+    font-weight: 600;
+}
+
+.maho-design-preview-place {
+    display: block;
+    width: 100%;
+    padding: 0.25rem 0.375rem;
+    border: 0;
+    border-radius: 0.25rem;
+    background: none;
+    color: inherit;
+    font-size: 0.75rem;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.maho-design-preview-place:hover {
+    background: var(--tt-color-bg-hover, #e9e9ec);
+}
+
+.maho-design-preview-status {
+    padding: 0.25rem 0.75rem;
+    color: var(--tt-color-text-muted, #55555e);
+    font-size: 0.75rem;
+}
+
+.maho-design-preview-status[data-state="standalone"] {
+    color: #8a5a00;
+}
+
+.maho-design-preview-status[data-state="error"] {
+    color: #a12a20;
+}
+
+.maho-design-preview-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: #eef0f2;
+    overflow: hidden;
+}
+
+.maho-design-preview-frame {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    border: 0;
+    background: #fff;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
+    transform-origin: top center;
+}
+
+.maho-design-preview-action.is-active {
+    background: var(--tt-color-bg-hover, #e9e9ec);
+    color: var(--tt-color-text, #22222a);
+    font-weight: 600;
+}
+
+/*
+ * The preview header is the editor toolbar's counterpart: one band, the same
+ * background, border, padding, control height and hover treatment, so the two
+ * panes read as a single workspace.
+ */
+.maho-design-preview-bar {
+    background: var(--tt-color-bg-subtle, #f7f7f8);
+    border-bottom: 1px solid var(--tt-color-border, #dcdce1);
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.125rem;
+    flex-shrink: 0;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.maho-design-preview-store {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    font-size: 0;
+}
+
+.maho-design-preview-store select,
+.maho-design-preview-url input {
+    height: var(--tt-btn-size, 1.75rem);
+    padding: 0 0.375rem;
+    border: 1px solid var(--tt-color-border, #dcdce1);
+    border-radius: var(--tt-radius-md, 4px);
+    background: var(--tt-color-bg, #fff);
+    color: var(--tt-color-text-muted, #55555e);
+    font-size: 0.75rem;
+}
+
+.maho-design-preview-store select {
+    max-width: 8rem;
+}
+
+.maho-design-preview-url {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    flex: 1 1 8rem;
+    min-width: 5rem;
+}
+
+.maho-design-preview-url input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.maho-design-preview-devices {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    flex-shrink: 0;
+}
+
+.maho-design-preview-device,
+.maho-design-preview-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--tt-btn-size, 1.75rem);
+    min-width: var(--tt-btn-size, 1.75rem);
+    padding: 0 0.375rem;
+    border: 0;
+    border-radius: var(--tt-radius-md, 4px);
+    background: transparent;
+    color: var(--tt-color-text-muted, #55555e);
+    font-size: 0.75rem;
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.maho-design-preview-device:hover,
+.maho-design-preview-action:hover {
+    background: var(--tt-color-bg-hover, #e9e9ec);
+    color: var(--tt-color-text, #22222a);
+}
+
+.maho-design-preview-device.is-active,
+.maho-design-preview-action.is-active {
+    background: var(--tt-color-bg-hover, #e9e9ec);
+    color: var(--tt-color-text, #22222a);
+    font-weight: 600;
+}
+
+.maho-design-preview-places {
+    border-bottom: 1px solid var(--tt-color-border, #dcdce1);
+    background: var(--tt-color-bg-subtle, #f7f7f8);
+}
+
+/* The header is two rows of the same band: the URL row repeats the surface. */
+.maho-design-preview-url {
+    background: var(--tt-color-bg-subtle, #f7f7f8);
+    border-bottom: 1px solid var(--tt-color-border, #dcdce1);
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.125rem;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.maho-design-preview-url input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Labels stay on one line: wrapping made the band taller than the toolbar. */
+.maho-design-preview-bar .maho-design-preview-action,
+.maho-design-preview-bar .maho-design-preview-device,
+.maho-design-preview-url .maho-design-preview-action {
+    white-space: nowrap;
+}
+
+.maho-design-preview-status {
+    margin-left: auto;
+    padding: 0 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Toolbar controls are icon-only: the label lives in title and aria-label. */
+.maho-design-preview-device,
+.maho-design-preview-action {
+    padding: 0;
+}
+
+.maho-design-preview-device svg,
+.maho-design-preview-action svg {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+}
