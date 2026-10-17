@@ -7,6 +7,8 @@
 
 **Design mode and CTA components for the Maho Commerce admin content editor.** Adds a Design Mode shell with a block rail on the left, a real theme button for calls to action, and a move handle that reorders blocks inside nested columns and bento cells. Built for [Maho Commerce](https://mahocommerce.com).
 
+<img width="1920" height="971" alt="immagine" src="https://github.com/user-attachments/assets/4c9adbeb-21de-4d40-88b6-6c4279e3bd32" />
+
 ## What it does
 
 - **Design Mode** button in the editor toolbar: opens a full-screen shell with the content on the right and a **block rail** on the left; closes with the button or `Esc`
