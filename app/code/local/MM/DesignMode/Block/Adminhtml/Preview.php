@@ -231,7 +231,7 @@ class MM_DesignMode_Block_Adminhtml_Preview extends Mage_Core_Block_Abstract
             return [];
         }
 
-        return array_values(array_map('intval', $storeIds));
+        return array_values(array_map(intval(...), $storeIds));
     }
 
     /**
