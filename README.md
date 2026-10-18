@@ -22,7 +22,7 @@
 - The editor scroll position is preserved when entering and leaving Design Mode
 - **Split preview**: the pane on the right loads the real storefront page and shows the content being typed in place of the saved block, so the theme initializes slideshows, tabs and widgets exactly as on the frontend
 - The preview toolbar carries the store, device presets (mobile, tablet, desktop), scroll sync and a popout window, plus a browser-like row with reload, URL and open; the controls are icon-only, with the label in `title` and `aria-label`
-- The preview **browses like the storefront**: links work, the address field follows the page you are on, and Reload re-applies the draft there — that is how a static block is reached on the page that renders it
+- The preview **browses like the storefront**: links work, the address field follows the page you are on, and Reload re-applies the draft there that is how a static block is reached on the page that renders it
 - Typing updates the preview with a single-flight debounce: one request at a time, only the last content is sent
 
 ## Requirements
@@ -75,10 +75,10 @@ The module ships no install script and no schema migration: it is layout, JS and
 
 The module ships the standard Maho CI gates:
 
-- **PHP CS Fixer** (dry-run) — `composer cs` (or `composer cs-fix` to apply)
-- **PHPStan** (level 8) — `composer phpstan`
-- **Rector** (dry-run) — `composer rector`
-- **JS syntax** — `node --check public/js/mage/adminhtml/wysiwyg/design-mode.js`
-- **XML syntax** — module, config and layout files
+- **PHP CS Fixer** (dry-run) `composer cs` (or `composer cs-fix` to apply)
+- **PHPStan** (level 8) `composer phpstan`
+- **Rector** (dry-run) `composer rector`
+- **JS syntax** `node --check public/js/mage/adminhtml/wysiwyg/design-mode.js`
+- **XML syntax** module, config and layout files
 
 Run them all at once with `composer check`.
